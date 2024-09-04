@@ -3,7 +3,7 @@ library(tidyverse)
 library(bcdata)
 
 # Point data - from shapefile
-points = sf::read_sf("data/all_sp_records_August21-2024.shp")
+points = sf::read_sf("data/all_sp_records_September-04-2024.shp")
 
 points_simple = points |> 
   dplyr::select(Species = Species,
@@ -11,32 +11,34 @@ points_simple = points |>
                 Record_type = Rcrd_ty)
 
 # Point data - from geodatabase
-points_gdb_inc = sf::st_read("data/2.1 SpatialData_Mesocarnivores_11Oct.gdb/",
-                         layer = "IncidentalObs_Mesocarns_11Oct") |> 
-  st_as_sf() |> 
-  dplyr::select(Species = SCIENTIFIC_NAME,
-                Date = OBSERVATION_DATE) |> 
-  dplyr::mutate(Record_type = "incidental")  |> 
-  dplyr::rename(geometry = GEOMETRY) |> 
-  sf::st_transform(4326)
+# points_gdb_inc = sf::st_read("data/2.1 SpatialData_Mesocarnivores_11Oct.gdb/",
+#                          layer = "IncidentalObs_Mesocarns_11Oct") |> 
+#   st_as_sf() |> 
+#   dplyr::select(Species = SCIENTIFIC_NAME,
+#                 Date = OBSERVATION_DATE) |> 
+#   dplyr::mutate(Record_type = "incidental")  |> 
+#   dplyr::rename(geometry = GEOMETRY) |> 
+#   sf::st_transform(4326)
 
-points_gdb_survey = sf::st_read("data/2.1 SpatialData_Mesocarnivores_11Oct.gdb/",
-                             layer = "SurveylObs_Mesocarns_11Oct") |> 
-  st_as_sf() |> 
-  dplyr::select(Species = SCIENTIFIC_NAME, 
-                Date = SURVEY_START_DATE) |> 
-  dplyr::mutate(Record_type = "survey") |> 
-  dplyr::rename(geometry = GEOMETRY) |> 
-  sf::st_transform(4326)
+# points_gdb_survey = sf::st_read("data/2.1 SpatialData_Mesocarnivores_11Oct.gdb/",
+#                              layer = "SurveylObs_Mesocarns_11Oct") |> 
+#   st_as_sf() |> 
+#   dplyr::select(Species = SCIENTIFIC_NAME, 
+#                 Date = SURVEY_START_DATE) |> 
+#   dplyr::mutate(Record_type = "survey") |> 
+#   dplyr::rename(geometry = GEOMETRY) |> 
+#   sf::st_transform(4326)
+# 
+# # Combine point data.
+# all_points = dplyr::bind_rows(
+#   points_gdb_inc,
+#   points_gdb_survey,
+#   points_simple
+# )
+# 
+# all_points = sf::st_make_valid(all_points)
 
-# Combine point data.
-all_points = dplyr::bind_rows(
-  points_gdb_inc,
-  points_gdb_survey,
-  points_simple
-)
-
-all_points = sf::st_make_valid(all_points)
+all_points= sf::st_make_valid(points_simple)
 
 # Combine some different species names into bigger categories.
 all_points = all_points |> 

@@ -168,7 +168,7 @@ server <- function(input, output, session) {
       hideGroup(the_species)
   }
   
-  l |> 
+  l= l |> 
     addPolygons(
       data = bc_parks,
       fillColor = 'darkgreen',
