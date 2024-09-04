@@ -1,5 +1,6 @@
 library(sf)
 library(tidyverse)
+library(bcdata)
 
 # Point data - from shapefile
 points = sf::read_sf("data/all_sp_records_August21-2024.shp")
@@ -147,3 +148,10 @@ iucn_ranges_s = rmapshaper::ms_simplify(iucn_ranges)
 #   dplyr::summarise()
 
 saveRDS(iucn_ranges_s, "app/www/IUCN_ranges.rds")
+
+parks_in_bc = bcdc_query_geodata("bc-parks-ecological-reserves-and-protected-areas") |>
+  collect()
+
+parks_in_bc_s = sf::st_simplify(parks_in_bc, dTolerance = 50)
+
+saveRDS(parks_in_bc_s,"app/www/parks_in_bc.rds")

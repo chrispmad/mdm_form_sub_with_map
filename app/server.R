@@ -70,7 +70,17 @@ server <- function(input, output, session) {
   
   iucn_ranges = readRDS("IUCN_ranges.rds")
   
+  bc_parks = readRDS("parks_in_bc.rds") |> 
+    sf::st_transform(4326)
+  
   unique_iucn_ranges = unique(iucn_ranges$SCI_NAME)
+  
+  # Add in any species that do not have IUCN ranges.
+  names_in_grid = names(bc_3km_grid)[-c(1,ncol(bc_3km_grid))]
+  names_to_add = names_in_grid[!names_in_grid %in% stringr::str_replace_all(unique_iucn_ranges," ","_")]
+  
+  species_to_map = c(unique_iucn_ranges, stringr::str_replace_all(names_to_add,"_"," "))
+  species_to_map = species_to_map[order(species_to_map)]
   
   my_colours = c(
       "#FF0000", # Red
@@ -88,7 +98,9 @@ server <- function(input, output, session) {
       "#000080", # Navy
       "#BFFF00", # Lime
       "#4B0082", # Indigo
-      "#800000"  # Maroon
+      "#800000",  # Maroon,
+      "black",
+      "grey"
     )
   
   # Render a leaflet map for map tab.
@@ -96,31 +108,38 @@ server <- function(input, output, session) {
     addTiles(group = 'OSM') |> 
     addProviderTiles(providers$CartoDB, group = 'CartoDB') |> 
     addProviderTiles(providers$Esri.NatGeoWorldMap, group = 'ESRI_NatGeo') |> 
+    addMapPane(name = 'bc_parks', zIndex = 300) |> 
+    addMapPane(name = 'species', zIndex = 550) |> 
     addLayersControl(
       position = 'bottomleft',
       baseGroups = c("OSM","CartoDB","ESRI_NatGeo"),
-      overlayGroups = unique_iucn_ranges,
+      overlayGroups = c("BC Parks",species_to_map),
       options = layersControlOptions(collapsed = F)
     )
   
-  for(i in 1:length(unique_iucn_ranges)){
+  # Find the list of species to plot...
+  
+  for(i in 1:length(species_to_map)){
     
-    the_species = unique_iucn_ranges[i]
+    the_species = species_to_map[i]
     the_column = stringr::str_replace_all(the_species, " ", "_")
     the_range = iucn_ranges[iucn_ranges$SCI_NAME == the_species,]
   
-    # ggplot() + geom_sf(data = species_grid, aes(fill = !!rlang::sym(the_column)))
-    
-    l = l |> 
-      addPolygons(
-        data = the_range,
-        group = the_species,
-        # fillColor = my_colours[i],
-        fillColor = 'transparent',
-        color = my_colours[i],
-        # fillOpacity = 0.6,
-        opacity = 0.6
-      )
+    # If there is a range for this species, 
+    if(nrow(the_range) > 0){
+      l = l |> 
+        addPolygons(
+          data = the_range,
+          group = the_species,
+          # fillColor = my_colours[i],
+          fillColor = 'transparent',
+          color = my_colours[i],
+          # fillOpacity = 0.6,
+          opacity = 0.6,
+          options = pathOptions(pane = "species",
+                                interactive = FALSE)
+        )
+    }
     
     if(the_column %in% names(bc_3km_grid)){
       
@@ -129,27 +148,42 @@ server <- function(input, output, session) {
                       geom = x) |> 
         dplyr::filter(!is.na(!!rlang::sym(the_column)))
       
-      l = l |> 
-        addPolygons(
-          data = species_grid,
-          color = 'black',
-          weight = 1,
-          fillColor = my_colours[i],
-          # color = my_colours[i],
-          opacity = 1,
-          fillOpacity = 0.8,
-          label = ~the_species,
-          group = the_species
-        )
+      if(nrow(species_grid) > 0){
+        l = l |> 
+          addPolygons(
+            data = species_grid,
+            color = 'black',
+            weight = 1,
+            fillColor = my_colours[i],
+            # color = my_colours[i],
+            opacity = 1,
+            fillOpacity = 0.8,
+            label = ~the_species,
+            group = the_species,
+            options = pathOptions(pane = "species")
+          )
+      }
     }
     l = l |> 
       hideGroup(the_species)
   }
   
+  l |> 
+    addPolygons(
+      data = bc_parks,
+      fillColor = 'darkgreen',
+      color = 'green',
+      weight = 2,
+      fillOpacity = 0.65,
+      label = ~PROTECTED_LANDS_NAME,
+      options = pathOptions(pane = "bc_parks"),
+      group = 'BC Parks'
+    )
+    
   l = l |> 
     addScaleBar() |> 
-    addLegend(colors = my_colours[1:length(unique_iucn_ranges)],
-              labels = unique_iucn_ranges) |> 
+    addLegend(colors = my_colours[1:length(species_to_map)],
+              labels = species_to_map) |> 
     showGroup('Canis latrans')
   
   output$leafmap = renderLeaflet(l)
