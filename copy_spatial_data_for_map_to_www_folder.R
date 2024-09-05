@@ -3,7 +3,7 @@ library(tidyverse)
 library(bcdata)
 
 # Point data - from shapefile
-points = sf::read_sf("data/all_sp_records_September-04-2024.shp")
+points = sf::read_sf("data/all_sp_records_September-05-2024.shp")
 
 points_simple = points |> 
   dplyr::select(Species = Species,
@@ -46,6 +46,7 @@ all_points = all_points |>
     Species == "Neovison vison" ~ 'Neogale vison',
     Species == "Martes pennanti" ~ "Pekania pennanti",
     Species == "Lontra canadensis pacifica" ~ "Lontra canadensis",
+    Species == "Mustela erminea" ~ "Mustela richardsonii",
     Species %in% c("Gulo gulo luscus","Gulo gulo vancouverensis") ~ "Gulo gulo",
     Species %in% c("Mustela frenata","Mustela frenata altifrontalis") ~ 'Neogale frenata',
     Species == 'Procyon lotor pacificus' ~ 'Procyon lotor',
@@ -157,3 +158,4 @@ parks_in_bc = bcdc_query_geodata("bc-parks-ecological-reserves-and-protected-are
 parks_in_bc_s = sf::st_simplify(parks_in_bc, dTolerance = 50)
 
 saveRDS(parks_in_bc_s,"app/www/parks_in_bc.rds")
+
