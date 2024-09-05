@@ -109,6 +109,7 @@ iucn_ranges = dplyr::bind_rows(iucn_ranges)
 iucn_ranges = iucn_ranges |> 
   dplyr::mutate(SCI_NAME = dplyr::case_when(
     SCI_NAME == "Martes pennanti" ~ "Pekania pennanti",
+    SCI_NAME == "Mustela erminea" ~ "Mustela richardsonii",
     T ~ SCI_NAME
   ))
 
